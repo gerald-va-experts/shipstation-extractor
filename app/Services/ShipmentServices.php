@@ -30,7 +30,7 @@ class ShipmentServices
         $data = json_decode($shipments);
 
         // Set the file path
-        $filePath = public_path('exports\shipments-' . time() . '.csv');
+        $filePath = public_path('exports\shipments-' . $yesterday . '-' . time() . '.csv');
 
         // Open the file for writing
         $file = fopen($filePath, 'w');
