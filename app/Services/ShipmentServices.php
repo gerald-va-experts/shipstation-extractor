@@ -8,7 +8,7 @@ class ShipmentServices
 {
     public function getShipments()
     {
-        $yesterday = Carbon::now()->format('Y-m-d');
+        $yesterday = Carbon::yesterday()->format('Y-m-d');
 
         //Get shipments
         $client = new \GuzzleHttp\Client([
