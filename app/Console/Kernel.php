@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('shipments:get')->everyMinute()->sendOutputTo(storage_path('logs/cron.log'));
+        $schedule->command('geHeldOrders:get')->everyMinute()->sendOutputTo(storage_path('logs/cron.log'));
     }
 
     /**
