@@ -150,7 +150,7 @@ class ShipmentServices
         $file = fopen($filePath, 'w');
 
         // Add the header row
-        fputcsv($file, ['Order Number', 'Order Date', 'Item SKU', 'Item Name', 'Recipient', 'Quantity', 'Order Total', 'Tags', 'Country', 'Ship Date']);
+        fputcsv($file, ['Order Number', 'Order Date', 'Item SKU', 'Item Name', 'Recipient', 'Quantity', 'Order Total', 'Tags', 'Country', 'Ship Date', 'Street 1', 'Street 2', 'Street 3', 'City', 'Postal', 'State', 'Address Verified']);
 
         //Add the data rows for page 1
         foreach ($filteredData as $orders) {
@@ -166,7 +166,14 @@ class ShipmentServices
             $tag = self::TAG;
             $country = $orders->shipTo->country;
             $shipDate = $orders->shipDate;
-            fputcsv($file, [$orderNumber, $orderDate, $itemSKU, $itemName, $recipient, $quantity, $total, $tag, $country, $shipDate]);
+            $street1 = $orders->shipTo->street1;
+            $street2 = $orders->shipTo->street2;
+            $street3 = $orders->shipTo->street3;
+            $city = $orders->shipTo->city;
+            $postal = $orders->shipTo->postalCode;
+            $state = $orders->shipTo->state;
+            $addressVerified = $orders->shipTo->addressVerified;
+            fputcsv($file, [$orderNumber, $orderDate, $itemSKU, $itemName, $recipient, $quantity, $total, $tag, $country, $shipDate, $street1, $street2, $street3, $city, $postal, $state, $addressVerified]);
         }
 
         // Get all pages
@@ -197,7 +204,14 @@ class ShipmentServices
                 $tag = self::TAG;
                 $country = $orders->shipTo->country;
                 $shipDate = $orders->shipDate;
-                fputcsv($file, [$orderNumber, $orderDate, $itemSKU, $itemName, $recipient, $quantity, $total, $tag, $country, $shipDate]);
+                $street1 = $orders->shipTo->street1;
+                $street2 = $orders->shipTo->street2;
+                $street3 = $orders->shipTo->street3;
+                $city = $orders->shipTo->city;
+                $postal = $orders->shipTo->postalCode;
+                $state = $orders->shipTo->state;
+                $addressVerified = $orders->shipTo->addressVerified;
+                fputcsv($file, [$orderNumber, $orderDate, $itemSKU, $itemName, $recipient, $quantity, $total, $tag, $country, $shipDate, $street1, $street2, $street3, $city, $postal, $state, $addressVerified]);
             }
         }
 
