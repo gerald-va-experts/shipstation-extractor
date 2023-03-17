@@ -54,4 +54,24 @@ class Controller extends BaseController
         // Do something with the response body, such as echo it
         dd($responseBody);
     }
+
+    public function import()
+    {
+        $file = fopen('imports\FedEx_SampleTracking.csv', 'r');
+
+        // Get the values of the 'Name' column (assuming it's the first column)
+        $names = array();
+        while (($row = fgetcsv($file)) !== false) {
+            $names[] = $row[0]; // Assuming 'Name' column is the first column
+        }
+
+        // Close the CSV file
+        fclose($file);
+
+
+
+        foreach ($names as $name) {
+            echo $name . '<br>';
+        }
+    }
 }

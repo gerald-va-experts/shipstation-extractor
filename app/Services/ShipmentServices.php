@@ -11,7 +11,7 @@ class ShipmentServices
     const TAG = "Bad Address";
     public function getShipments()
     {
-        $yesterday = Carbon::yesterday()->format('Y-m-d');
+        $yesterday = Carbon::now()->format('Y-m-d');
 
         //Get shipments
         $client = new \GuzzleHttp\Client([
@@ -33,7 +33,7 @@ class ShipmentServices
         $data = json_decode($shipments);
 
         // Set the file path
-        $filePath = public_path('exports\shipments\shipments-' . $yesterday . '-' . time() . '.csv');
+        $filePath = public_path('exports\shipments\shipments-' . $yesterday . '.csv');
 
         // Open the file for writing
         $file = fopen($filePath, 'w');
