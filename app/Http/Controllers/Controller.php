@@ -6,6 +6,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
 use GuzzleHttp\Client;
+use Carbon\Carbon;
 
 class Controller extends BaseController
 {
@@ -13,9 +14,6 @@ class Controller extends BaseController
 
     public function index()
     {
-
-
-
 
         // Instantiate a new Guzzle client
         $client = new Client();
@@ -57,21 +55,13 @@ class Controller extends BaseController
 
     public function import()
     {
-        $file = fopen('imports\FedEx_SampleTracking.csv', 'r');
-
-        // Get the values of the 'Name' column (assuming it's the first column)
-        $names = array();
-        while (($row = fgetcsv($file)) !== false) {
-            $names[] = $row[0]; // Assuming 'Name' column is the first column
-        }
-
-        // Close the CSV file
-        fclose($file);
-
-
-
-        foreach ($names as $name) {
-            echo $name . '<br>';
+        $today = Carbon::now()->format('Y-m-d');
+        $csvData = file_get_contents('imports\FedEx_SampleTracking.csv');
+        $rows = array_map('str_getcsv', explode("\n", $csvData));
+        foreach ($rows as $row) {
+            dd($row[0]);
+            // Do something with each row
+            // $row[0] contains the first column, $row[1] contains the second column, and so on
         }
     }
 }

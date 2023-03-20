@@ -154,7 +154,7 @@ class ShipmentServices
         $data = json_decode($heldOrders);
         $filteredData = $this->filterOrdersByTag($data->orders);
         //Set the file path
-        $filePath = public_path('exports\held-orders\held-orders-' . $yesterday . '-' . time() . '.csv');
+        $filePath = public_path('exports\held-orders\held-orders-' . $yesterday . '.csv');
         // Open the file for writing
         $file = fopen($filePath, 'w');
 
