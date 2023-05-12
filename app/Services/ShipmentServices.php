@@ -27,6 +27,7 @@ class ShipmentServices
             ],
             'allow_redirects' => true
         ]);
+
         //return page 1 shipments;
         $shipments = $response->getBody()->getContents();
 
@@ -92,6 +93,118 @@ class ShipmentServices
                 $shipDate = $shipmentNextPage->shipDate;
                 $trackingNumber = $shipmentNextPage->trackingNumber;
                 fputcsv($file, [$orderNumber, $shipDate, $carrierCode, $trackingNumber]);
+            }
+        }
+
+        // Close the file
+        fclose($file);
+
+        $this->getAllOrders();
+
+        // Return a response indicating success or failure
+        if (file_exists($filePath)) {
+            return response()->json(['message' => 'CSV file exported and saved successfully']);
+        } else {
+            return response()->json(['message' => 'Error occurred while exporting CSV file'], 500);
+        }
+    }
+
+    public function getAllOrders()
+    {
+        $yesterday = Carbon::yesterday()->format('Y-m-d');
+
+        //Get shipments
+        $client = new \GuzzleHttp\Client([
+            'base_uri' => 'https://ssapi.shipstation.com',
+            'auth' => ['c2f656f36d864c5486cb36561035a273', '10f340330eb94fe8b80a780aa1a6ee6b']
+        ]);
+
+        $response = $client->get('/orders', [
+            'query' => [
+                "orderDateStart" => $yesterday . "T00:00:00.000Z",
+                "orderDateEnd" => $yesterday . "T00:00:00.000Z",
+                "page" => 1,
+            ],
+            'allow_redirects' => true
+        ]);
+
+        //return page 1 shipments;
+        $shipments = $response->getBody()->getContents();
+
+        $data = json_decode($shipments);
+
+        // Set the file path
+        $filePath = public_path('exports\all-orders\allOrders-' . $yesterday . '.csv');
+
+        // Open the file for writing
+        $file = fopen($filePath, 'w');
+
+        // Add the header row
+        fputcsv($file, ['Order ID', 'Order Number', 'Order Date', 'Name of the customer', 'Item Name', 'Item SKU', 'Quantity', 'Status', 'Requested Shipping Service', 'Street1', 'Street2', 'Street3', 'City', 'State', 'Postal', 'Country Code']);
+
+        // Add the data rows for page 1
+        foreach ($data->orders as $shipment) {
+            try {
+                $orderId = $shipment->orderId;
+                $orderNumber = $shipment->orderNumber;
+                $orderDate = $shipment->orderDate;
+                $customerName = $shipment->shipTo->name;
+
+                $itemName = $shipment->items[0]->name;
+                $itemSKU = $shipment->items[0]->sku;
+
+                $quantity = $shipment->items[0]->quantity;
+                $status = $shipment->orderStatus;
+                $requestedShippingService = $shipment->requestedShippingService;
+                $street1 = $shipment->shipTo->street1;
+                $street2 = $shipment->shipTo->street2;
+                $street3 = $shipment->shipTo->street3;
+                $city = $shipment->shipTo->city;
+                $state = $shipment->shipTo->state;
+                $postal = $shipment->shipTo->postalCode;
+                $countryCode = $shipment->shipTo->country;
+                fputcsv($file, [$orderId, $orderNumber, $orderDate, $customerName, $itemName, $itemSKU, $quantity, $status, $requestedShippingService, $street1, $street2, $street3, $city, $state, $postal, $countryCode]);
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        // Get all pages
+        for ($page = 2; $page <= $data->pages; $page++) {
+            $nextPage = $client->get('/orders', [
+                'query' => [
+                    "orderDateStart" => $yesterday . "T00:00:00.000Z",
+                    "orderDateEnd" => $yesterday . "T00:00:00.000Z",
+                    "page" => $page,
+                ],
+                'allow_redirects' => true
+            ]);
+            $shipmentsNext = $nextPage->getBody()->getContents();
+
+            $dataNext = json_decode($shipmentsNext);
+            // // Add the data rows for so on page
+            foreach ($dataNext->orders as $shipmentNextPage) {
+                try {
+                    $orderId = $shipmentNextPage->orderId;
+                    $orderNumber = $shipmentNextPage->orderNumber;
+                    $orderDate = $shipmentNextPage->orderDate;
+                    $customerName = $shipmentNextPage->shipTo->name;
+                    $itemName = $shipmentNextPage->items[0]->name;
+                    $itemSKU = $shipmentNextPage->items[0]->sku;
+                    $quantity = $shipmentNextPage->items[0]->quantity;
+                    $status = $shipmentNextPage->orderStatus;
+                    $requestedShippingService = $shipmentNextPage->requestedShippingService;
+                    $street1 = $shipmentNextPage->shipTo->street1;
+                    $street2 = $shipmentNextPage->shipTo->street2;
+                    $street3 = $shipmentNextPage->shipTo->street3;
+                    $city = $shipmentNextPage->shipTo->city;
+                    $state = $shipmentNextPage->shipTo->state;
+                    $postal = $shipmentNextPage->shipTo->postalCode;
+                    $countryCode = $shipmentNextPage->shipTo->country;
+                    fputcsv($file, [$orderId, $orderNumber, $orderDate, $customerName, $itemName, $itemSKU, $quantity, $status, $requestedShippingService, $street1, $street2, $street3, $city, $state, $postal, $countryCode]);
+                } catch (\Exception $e) {
+                    continue;
+                }
             }
         }
 

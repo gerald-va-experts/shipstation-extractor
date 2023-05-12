@@ -20,3 +20,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('/jah', [Controller::class, 'import']);
+
+Route::post('/getStatusByTrackingNumber', [Controller::class, 'getStatusByTrackingNumber']);
