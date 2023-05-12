@@ -112,6 +112,7 @@ class ShipmentServices
     public function getAllOrders()
     {
         $yesterday = Carbon::yesterday()->format('Y-m-d');
+        $today = Carbon::now()->format('Y-m-d');
 
         //Get shipments
         $client = new \GuzzleHttp\Client([
@@ -122,7 +123,7 @@ class ShipmentServices
         $response = $client->get('/orders', [
             'query' => [
                 "orderDateStart" => $yesterday . "T00:00:00.000Z",
-                "orderDateEnd" => $yesterday . "T00:00:00.000Z",
+                "orderDateEnd" => $today . "T00:00:00.000Z",
                 "page" => 1,
             ],
             'allow_redirects' => true
@@ -174,7 +175,7 @@ class ShipmentServices
             $nextPage = $client->get('/orders', [
                 'query' => [
                     "orderDateStart" => $yesterday . "T00:00:00.000Z",
-                    "orderDateEnd" => $yesterday . "T00:00:00.000Z",
+                    "orderDateEnd" => $today . "T00:00:00.000Z",
                     "page" => $page,
                 ],
                 'allow_redirects' => true
