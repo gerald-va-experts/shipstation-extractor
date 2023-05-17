@@ -109,6 +109,43 @@ class ShipmentServices
         }
     }
 
+    public function generateTag($tagId)
+    {
+
+        switch ($tagId) {
+            case "15291":
+                return "Backorder";
+            case "3480":
+                return "Bad Address";
+            case "21743":
+                return "DHL GlobalMail Shipment";
+            case "7351":
+                return "EU Address";
+            case "15282":
+                return "EU SKU";
+            case "21742":
+                return "Evri Shipment";
+            case "4123":
+                return "FORCE SHIP";
+            case "18911":
+                return "Missing Phone Number";
+            case "4254":
+                return "SPECIAL REPORTING v1";
+            case "4921":
+                return "SPLIT ORDER";
+            case "3246":
+                return "UK Address";
+            case "3245":
+                return "UK IGNORE";
+            case "15283":
+                return "UK SHIP";
+            case "9312":
+                return "Urgent";
+            default:
+                return "";
+        }
+    }
+
     public function getAllOrders()
     {
         $yesterday = Carbon::yesterday()->format('Y-m-d');
@@ -141,19 +178,24 @@ class ShipmentServices
         $file = fopen($filePath, 'w');
 
         // Add the header row
-        fputcsv($file, ['Order ID', 'Order Number', 'Order Date', 'Name of the customer', 'Item Name', 'Item SKU', 'Quantity', 'Status', 'Requested Shipping Service', 'Street1', 'Street2', 'Street3', 'City', 'State', 'Postal', 'Country Code']);
+        fputcsv($file, ['Order ID', 'Order Number', 'Order Date', 'Name of the customer', 'Item Name', 'Item SKU', 'Quantity', 'Status', 'Requested Shipping Service', 'Street1', 'Street2', 'Street3', 'City', 'State', 'Postal', 'Country Code', 'Tags']);
 
         // Add the data rows for page 1
         foreach ($data->orders as $shipment) {
             try {
+                $tags = "";
+
+                //map and generate tag
+                foreach ($shipment->tagIds as $tag) {
+                    $tags = $this->generateTag($tag) . ":" . $tags;
+                }
+
                 $orderId = $shipment->orderId;
                 $orderNumber = $shipment->orderNumber;
                 $orderDate = $shipment->orderDate;
                 $customerName = $shipment->shipTo->name;
-
                 $itemName = $shipment->items[0]->name;
                 $itemSKU = $shipment->items[0]->sku;
-
                 $quantity = $shipment->items[0]->quantity;
                 $status = $shipment->orderStatus;
                 $requestedShippingService = $shipment->requestedShippingService;
@@ -164,7 +206,7 @@ class ShipmentServices
                 $state = $shipment->shipTo->state;
                 $postal = $shipment->shipTo->postalCode;
                 $countryCode = $shipment->shipTo->country;
-                fputcsv($file, [$orderId, $orderNumber, $orderDate, $customerName, $itemName, $itemSKU, $quantity, $status, $requestedShippingService, $street1, $street2, $street3, $city, $state, $postal, $countryCode]);
+                fputcsv($file, [$orderId, $orderNumber, $orderDate, $customerName, $itemName, $itemSKU, $quantity, $status, $requestedShippingService, $street1, $street2, $street3, $city, $state, $postal, $countryCode, $tags]);
             } catch (\Exception $e) {
                 continue;
             }
@@ -186,6 +228,13 @@ class ShipmentServices
             // // Add the data rows for so on page
             foreach ($dataNext->orders as $shipmentNextPage) {
                 try {
+                    $tags = "";
+
+                    //map and generate tag
+                    foreach ($shipment->tagIds as $tag) {
+                        $tags = $this->generateTag($tag) . ":" . $tags;
+                    }
+
                     $orderId = $shipmentNextPage->orderId;
                     $orderNumber = $shipmentNextPage->orderNumber;
                     $orderDate = $shipmentNextPage->orderDate;
@@ -202,7 +251,7 @@ class ShipmentServices
                     $state = $shipmentNextPage->shipTo->state;
                     $postal = $shipmentNextPage->shipTo->postalCode;
                     $countryCode = $shipmentNextPage->shipTo->country;
-                    fputcsv($file, [$orderId, $orderNumber, $orderDate, $customerName, $itemName, $itemSKU, $quantity, $status, $requestedShippingService, $street1, $street2, $street3, $city, $state, $postal, $countryCode]);
+                    fputcsv($file, [$orderId, $orderNumber, $orderDate, $customerName, $itemName, $itemSKU, $quantity, $status, $requestedShippingService, $street1, $street2, $street3, $city, $state, $postal, $countryCode, $tags]);
                 } catch (\Exception $e) {
                     continue;
                 }
