@@ -8,15 +8,20 @@ use function PHPUnit\Framework\isEmpty;
 
 class ShipmentServices
 {
+    /**Author: Gerald(Jah) */
     const TAG = "Bad Address";
+    const BASE_URI = "https://ssapi.shipstation.com";
+    const AUTH_USER = 'c2f656f36d864c5486cb36561035a273';
+    const AUTH_PASSWORD = '10f340330eb94fe8b80a780aa1a6ee6b';
+
     public function getShipments()
     {
         $yesterday = Carbon::now()->format('Y-m-d');
 
         //Get shipments
         $client = new \GuzzleHttp\Client([
-            'base_uri' => 'https://ssapi.shipstation.com',
-            'auth' => ['c2f656f36d864c5486cb36561035a273', '10f340330eb94fe8b80a780aa1a6ee6b']
+            'base_uri' => self::BASE_URI,
+            'auth' => [self::AUTH_USER, self::AUTH_PASSWORD]
         ]);
 
         $response = $client->get('/shipments', [
@@ -146,57 +151,34 @@ class ShipmentServices
         }
     }
 
-    public function getAllOrders()
+    public function mapOrders($data, $file)
     {
-        $yesterday = Carbon::yesterday()->format('Y-m-d');
-        $today = Carbon::now()->format('Y-m-d');
-
-        //Get shipments
-        $client = new \GuzzleHttp\Client([
-            'base_uri' => 'https://ssapi.shipstation.com',
-            'auth' => ['c2f656f36d864c5486cb36561035a273', '10f340330eb94fe8b80a780aa1a6ee6b']
-        ]);
-
-        $response = $client->get('/orders', [
-            'query' => [
-                "orderDateStart" => $yesterday . "T00:00:00.000Z",
-                "orderDateEnd" => $today . "T00:00:00.000Z",
-                "page" => 1,
-            ],
-            'allow_redirects' => true
-        ]);
-
-        //return page 1 shipments;
-        $shipments = $response->getBody()->getContents();
-
-        $data = json_decode($shipments);
-
-        // Set the file path
-        $filePath = public_path('exports\all-orders\allOrders-' . $yesterday . '.csv');
-
-        // Open the file for writing
-        $file = fopen($filePath, 'w');
-
-        // Add the header row
-        fputcsv($file, ['Order ID', 'Order Number', 'Order Date', 'Name of the customer', 'Item Name', 'Item SKU', 'Quantity', 'Status', 'Requested Shipping Service', 'Street1', 'Street2', 'Street3', 'City', 'State', 'Postal', 'Country Code', 'Tags']);
-
-        // Add the data rows for page 1
+        // Add the data rows for page 1 (awaiting)
         foreach ($data->orders as $shipment) {
             try {
                 $tags = "";
+                $itemName = "";
+                $itemSKU = "";
+                $quantity = "";
 
                 //map and generate tag
-                foreach ($shipment->tagIds as $tag) {
-                    $tags = $this->generateTag($tag) . ":" . $tags;
+                if ($shipment->tagIds) {
+                    foreach ($shipment->tagIds as $tag) {
+                        $tags = $this->generateTag($tag) . ":" . $tags;
+                    }
+                }
+
+                $itemsCount = count($shipment->items);
+                if ($itemsCount > 0) {
+                    $itemName = $shipment->items[0]->name;
+                    $itemSKU = $shipment->items[0]->sku;
+                    $quantity = $shipment->items[0]->quantity;
                 }
 
                 $orderId = $shipment->orderId;
                 $orderNumber = $shipment->orderNumber;
                 $orderDate = $shipment->orderDate;
                 $customerName = $shipment->shipTo->name;
-                $itemName = $shipment->items[0]->name;
-                $itemSKU = $shipment->items[0]->sku;
-                $quantity = $shipment->items[0]->quantity;
                 $status = $shipment->orderStatus;
                 $requestedShippingService = $shipment->requestedShippingService;
                 $street1 = $shipment->shipTo->street1;
@@ -211,13 +193,23 @@ class ShipmentServices
                 continue;
             }
         }
+    }
+
+    public function mapAllPages($data, $file, $orderStatus, $dateStart, $dateEnd)
+    {
+        //Get shipments
+        $client = new \GuzzleHttp\Client([
+            'base_uri' => self::BASE_URI,
+            'auth' => [self::AUTH_USER, self::AUTH_PASSWORD]
+        ]);
 
         // Get all pages
         for ($page = 2; $page <= $data->pages; $page++) {
             $nextPage = $client->get('/orders', [
                 'query' => [
-                    "orderDateStart" => $yesterday . "T00:00:00.000Z",
-                    "orderDateEnd" => $today . "T00:00:00.000Z",
+                    "orderDateStart" => $dateStart . "T00:00:00.000Z",
+                    "orderDateEnd" => $dateEnd . "T00:00:00.000Z",
+                    "orderStatus" => $orderStatus,
                     "page" => $page,
                 ],
                 'allow_redirects' => true
@@ -225,23 +217,33 @@ class ShipmentServices
             $shipmentsNext = $nextPage->getBody()->getContents();
 
             $dataNext = json_decode($shipmentsNext);
+
             // // Add the data rows for so on page
             foreach ($dataNext->orders as $shipmentNextPage) {
                 try {
                     $tags = "";
+                    $itemName = "";
+                    $itemSKU = "";
+                    $quantity = "";
 
                     //map and generate tag
-                    foreach ($shipment->tagIds as $tag) {
-                        $tags = $this->generateTag($tag) . ":" . $tags;
+                    if ($shipmentNextPage->tagIds) {
+                        foreach ($shipmentNextPage->tagIds as $tag) {
+                            $tags = $this->generateTag($tag) . ":" . $tags;
+                        }
+                    }
+
+                    $itemsCount = count($shipmentNextPage->items);
+                    if ($itemsCount > 0) {
+                        $itemName = $shipmentNextPage->items[0]->name;
+                        $itemSKU = $shipmentNextPage->items[0]->sku;
+                        $quantity = $shipmentNextPage->items[0]->quantity;
                     }
 
                     $orderId = $shipmentNextPage->orderId;
                     $orderNumber = $shipmentNextPage->orderNumber;
                     $orderDate = $shipmentNextPage->orderDate;
                     $customerName = $shipmentNextPage->shipTo->name;
-                    $itemName = $shipmentNextPage->items[0]->name;
-                    $itemSKU = $shipmentNextPage->items[0]->sku;
-                    $quantity = $shipmentNextPage->items[0]->quantity;
                     $status = $shipmentNextPage->orderStatus;
                     $requestedShippingService = $shipmentNextPage->requestedShippingService;
                     $street1 = $shipmentNextPage->shipTo->street1;
@@ -257,8 +259,75 @@ class ShipmentServices
                 }
             }
         }
+    }
 
-        // Close the file
+    public function getShipmentsPerPage($dateStart, $dateEnd, $orderStatus)
+    {
+        //Get shipments
+        $client = new \GuzzleHttp\Client([
+            'base_uri' => self::BASE_URI,
+            'auth' => [self::AUTH_USER, self::AUTH_PASSWORD]
+        ]);
+
+        //awaiting
+        $response = $client->get('/orders', [
+            'query' => [
+                "orderDateStart" => $dateStart . "T00:00:00.000Z",
+                "orderDateEnd" => $dateEnd . "T00:00:00.000Z",
+                "orderStatus" => $orderStatus,
+                "page" => 1,
+            ],
+            'allow_redirects' => true
+        ]);
+
+        //return page 1 shipments;
+        $result = $response->getBody()->getContents();
+
+        $shipments = json_decode($result);
+
+        return $shipments;
+    }
+
+    public function getAllOrders()
+    {
+        /**Author: Gerald (Jah)*/
+
+        $pastDate = Carbon::now()->subDays(30)->format('Y-m-d');
+        $today = Carbon::now()->format('Y-m-d');
+        
+        //fetch data
+        $awaiting_shipment = $this->getShipmentsPerPage($pastDate, $today, "awaiting_shipment");
+        $shipped = $this->getShipmentsPerPage($pastDate, $today, "shipped");
+
+        /**
+         * --------start-------------
+         * Set the file path
+         * Open the file for writing
+         * Add the header row
+         */
+        $filePath = public_path('exports\all-orders\allOrders-' . $today . '.csv');
+        $file = fopen($filePath, 'w');
+        fputcsv($file, ['Order ID', 'Order Number', 'Order Date', 'Name of the customer', 'Item Name', 'Item SKU', 'Quantity', 'Status', 'Requested Shipping Service', 'Street1', 'Street2', 'Street3', 'City', 'State', 'Postal', 'Country Code', 'Tags']);
+        //-------end----------
+
+        // /**
+        //  * -------start-------------
+        //  * map result for shipped
+        //  * map all pages for shipped
+        //  */
+        $this->mapOrders($shipped, $file);
+        $this->mapAllPages($shipped, $file, "shipped", $pastDate, $today);
+        // //-------end----------
+
+        /**
+         * -------start-------------
+         * map result for awaiting_shipment
+         * map all pages for awaiting_shipment
+         */
+        $this->mapOrders($awaiting_shipment, $file);
+        $this->mapAllPages($awaiting_shipment, $file, "awaiting_shipment", $pastDate, $today);
+        //-------end----------
+
         fclose($file);
 
         // Return a response indicating success or failure
@@ -299,8 +368,8 @@ class ShipmentServices
 
         //Get orders
         $client = new \GuzzleHttp\Client([
-            'base_uri' => 'https://ssapi.shipstation.com',
-            'auth' => ['c2f656f36d864c5486cb36561035a273', '10f340330eb94fe8b80a780aa1a6ee6b']
+            'base_uri' => self::BASE_URI,
+            'auth' => [self::AUTH_USER, self::AUTH_PASSWORD]
         ]);
 
         $response = $client->get('/orders', [
