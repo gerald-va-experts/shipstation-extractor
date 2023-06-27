@@ -364,7 +364,7 @@ class ShipmentServices
 
     public function getOrders()
     {
-        $yesterday = Carbon::yesterday()->format('Y-m-d');
+        $yesterday = Carbon::now()->format('Y-m-d');
 
         //Get orders
         $client = new \GuzzleHttp\Client([
