@@ -105,6 +105,7 @@ class ShipmentServices
         fclose($file);
 
         $this->getAllOrders();
+        $this->getShipments30days();
 
         // Return a response indicating success or failure
         if (file_exists($filePath)) {
@@ -451,6 +452,106 @@ class ShipmentServices
                 $state = $orders->shipTo->state;
                 $addressVerified = $orders->shipTo->addressVerified;
                 fputcsv($file, [$orderNumber, $orderDate, $itemSKU, $itemName, $recipient, $quantity, $total, $tag, $country, $street1, $street2, $street3, $city, $postal, $state, $addressVerified]);
+            }
+        }
+
+        // Close the file
+        fclose($file);
+
+        // Return a response indicating success or failure
+        if (file_exists($filePath)) {
+            return response()->json(['message' => 'CSV file exported and saved successfully']);
+        } else {
+            return response()->json(['message' => 'Error occurred while exporting CSV file'], 500);
+        }
+    }
+
+    public function getShipments30days()
+    {
+        sleep(15 * 60);
+        $pastDate = Carbon::now()->subDays(30)->format('Y-m-d');
+        $today = Carbon::now()->format('Y-m-d');
+
+        //Get shipments
+        $client = new \GuzzleHttp\Client([
+            'base_uri' => self::BASE_URI,
+            'auth' => [self::AUTH_USER, self::AUTH_PASSWORD]
+        ]);
+
+        $response = $client->get('/shipments', [
+            'query' => [
+                "shipDateStart" => $pastDate . "T00:00:00.000Z",
+                "shipDateEnd" => $today . "T00:00:00.000Z",
+                "page" => 1,
+            ],
+            'allow_redirects' => true
+        ]);
+
+        //return page 1 shipments;
+        $shipments = $response->getBody()->getContents();
+
+        $data = json_decode($shipments);
+
+        // Set the file path
+        $filePath = public_path('exports\shipmentsPast30daystodate\shipments-' . $pastDate.' - '.$today. '.csv');
+
+        // Open the file for writing
+        $file = fopen($filePath, 'w');
+
+        // Add the header row
+        fputcsv($file, ['Order Number', 'Shipdate', 'Carrier', 'Tracking Number']);
+
+        // Add the data rows for page 1
+        foreach ($data->shipments as $shipment) {
+            $carrierCode = $shipment->carrierCode;
+
+            if ($shipment->carrierCode == "deutsche_post_cross_border") {
+                $carrierCode = "Deutsche Post Cross-Border";
+            } else if ($shipment->carrierCode == "royal_mail") {
+
+                $carrierCode = "Royal Mail";
+            } else if ($shipment->carrierCode == "hermescorp") {
+
+                $carrierCode = "EVRi UK";
+            }
+
+            $orderNumber = $shipment->orderNumber;
+            $shipDate = $shipment->shipDate;
+            $trackingNumber = $shipment->trackingNumber;
+            fputcsv($file, [$orderNumber, $shipDate, $carrierCode, $trackingNumber]);
+        }
+
+        // Get all pages
+        for ($page = 2; $page <= $data->pages; $page++) {
+            $nextPage = $client->get('/shipments', [
+                'query' => [
+                    "shipDateStart" => $pastDate . "T00:00:00.000Z",
+                    "shipDateEnd" => $today . "T00:00:00.000Z",
+                    "page" => $page,
+                ],
+                'allow_redirects' => true
+            ]);
+            $shipmentsNext = $nextPage->getBody()->getContents();
+
+            $dataNext = json_decode($shipmentsNext);
+            // // Add the data rows for so on page
+            foreach ($dataNext->shipments as $shipmentNextPage) {
+                $carrierCode = $shipmentNextPage->carrierCode;
+
+                if ($shipmentNextPage->carrierCode == "deutsche_post_cross_border") {
+                    $carrierCode = "Deutsche Post Cross-Border";
+                } else if ($shipmentNextPage->carrierCode == "royal_mail") {
+
+                    $carrierCode = "Royal Mail";
+                } else if ($shipmentNextPage->carrierCode == "hermescorp") {
+
+                    $carrierCode = "EVRi UK";
+                }
+
+                $orderNumber = $shipmentNextPage->orderNumber;
+                $shipDate = $shipmentNextPage->shipDate;
+                $trackingNumber = $shipmentNextPage->trackingNumber;
+                fputcsv($file, [$orderNumber, $shipDate, $carrierCode, $trackingNumber]);
             }
         }
 
