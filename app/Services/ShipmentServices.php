@@ -493,7 +493,7 @@ class ShipmentServices
         $data = json_decode($shipments);
 
         // Set the file path
-        $filePath = public_path('exports\shipmentsPast30daystodate\shipments-' . $pastDate.' - '.$today. '.csv');
+        $filePath = public_path('exports\shipmentsPast30daystodate\shipment30days_' . $pastDate.' - '.$today. '.csv');
 
         // Open the file for writing
         $file = fopen($filePath, 'w');
@@ -545,7 +545,7 @@ class ShipmentServices
                     $carrierCode = "Royal Mail";
                 } else if ($shipmentNextPage->carrierCode == "hermescorp") {
 
-                    $carrierCode = "EVRi UK";
+                    $carrierCode = "EVRi UK";5555
                 }
 
                 $orderNumber = $shipmentNextPage->orderNumber;
