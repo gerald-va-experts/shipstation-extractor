@@ -545,7 +545,7 @@ class ShipmentServices
                     $carrierCode = "Royal Mail";
                 } else if ($shipmentNextPage->carrierCode == "hermescorp") {
 
-                    $carrierCode = "EVRi UK";5555
+                    $carrierCode = "EVRi UK";
                 }
 
                 $orderNumber = $shipmentNextPage->orderNumber;
