@@ -295,7 +295,7 @@ class ShipmentServices
 
         $pastDate = Carbon::now()->subDays(30)->format('Y-m-d');
         $today = Carbon::now()->format('Y-m-d');
-        
+
         //fetch data
         $awaiting_shipment = $this->getShipmentsPerPage($pastDate, $today, "awaiting_shipment");
         $shipped = $this->getShipmentsPerPage($pastDate, $today, "shipped");
@@ -493,7 +493,7 @@ class ShipmentServices
         $data = json_decode($shipments);
 
         // Set the file path
-        $filePath = public_path('exports\shipmentsPast30daystodate\shipment30days_' . $pastDate.' - '.$today. '.csv');
+        $filePath = public_path('exports\shipmentsPast30daystodate\shipment30days_' . $today . '.csv');
 
         // Open the file for writing
         $file = fopen($filePath, 'w');
