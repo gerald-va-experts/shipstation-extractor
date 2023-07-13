@@ -294,8 +294,8 @@ class ShipmentServices
         /**Author: Gerald (Jah)*/
 
         $pastDate = Carbon::now()->subDays(30)->format('Y-m-d');
-        $today = Carbon::now()->format('Y-m-d');
-
+        $today = Carbon::now()->addDay()->format('Y-m-d');
+        $fileName = Carbon::now()->format('Y-m-d');
         //fetch data
         $awaiting_shipment = $this->getShipmentsPerPage($pastDate, $today, "awaiting_shipment");
         $shipped = $this->getShipmentsPerPage($pastDate, $today, "shipped");
@@ -306,7 +306,7 @@ class ShipmentServices
          * Open the file for writing
          * Add the header row
          */
-        $filePath = public_path('exports\all-orders\allOrders-' . $today . '.csv');
+        $filePath = public_path('exports\all-orders\allOrders-' . $fileName . '.csv');
         $file = fopen($filePath, 'w');
         fputcsv($file, ['Order ID', 'Order Number', 'Order Date', 'Name of the customer', 'Item Name', 'Item SKU', 'Quantity', 'Status', 'Requested Shipping Service', 'Street1', 'Street2', 'Street3', 'City', 'State', 'Postal', 'Country Code', 'Tags']);
         //-------end----------
